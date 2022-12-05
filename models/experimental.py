@@ -8,6 +8,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+import torchvision
+from utils.general import xywh2xyxy
+
 from utils.downloads import attempt_download
 
 
@@ -109,3 +112,68 @@ def attempt_load(weights, device=None, inplace=True, fuse=True):
     model.stride = model[torch.argmax(torch.tensor([m.stride.max() for m in model])).int()].stride  # max stride
     assert all(model[0].nc == m.nc for m in model), f'Models have different class counts: {[m.nc for m in model]}'
     return model
+
+
+def new_sorter(non_max, theshhold):  
+  sort_result=non_max[non_max[:,0].sort()[1]]
+  sort_result=sort_result[sort_result[:,4]>theshhold]
+  sort_result=sort_result[:,5]
+  
+  return sort_result
+
+
+def nms_lite(prediction, conf_thres=0.25, iou_thres=0.45, max_det=300, nm=0):
+  #nm - musk's number
+    """Non-Maximum Suppression (NMS) on inference results to reject overlapping detections
+
+    Returns:
+         list of detections, on (n,6) tensor per image [xyxy, conf, cls]
+    """
+
+    if isinstance(prediction, (list, tuple)):  # YOLOv5 model in validation model, output = (inference_out, loss_out)
+        prediction = prediction[0]  # select only inference output
+    
+    device = prediction.device
+    mps = 'mps' in device.type  # Apple MPS
+    if mps:  # MPS not fully supported yet, convert tensors to CPU before NMS
+        prediction = prediction.cpu()
+    bs = prediction.shape[0]  # batch size
+    nc = prediction.shape[2] - nm - 5  # number of classes
+    xc = prediction[..., 4] > conf_thres  # candidates
+    
+    # Checks
+    assert 0 <= iou_thres <= 1, f'Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0'
+    
+    # Settings
+    max_wh = 7680  # (pixels) maximum box width and height
+    max_nms = 30000  # maximum number of boxes into torchvision.ops.nms()
+    time_limit = 0.5 + 0.05 * bs  # seconds to quit after
+    redundant = True  # require redundant detections   
+    merge = False  # use merge-NMS
+    
+    mi = 5 + nc  # mask start index
+    output = [torch.zeros((0, 6 + nm), device=prediction.device)] * bs 
+    for xi, x in enumerate(prediction):  # image index, image inference
+        # Apply constraints
+        # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
+        x = x[xc[xi]]  # confidence   
+      
+        # Compute conf
+        x[:, 5:] *= x[:, 4:5]  # conf = obj_conf * cls_conf    
+    
+        # Box/Mask
+        box = xywh2xyxy(x[:, :4])  # center_x, center_y, width, height) to (x1, y1, x2, y2)
+        mask = x[:, mi:]  # zero columns if no masks
+        conf, j = x[:, 5:mi].max(1, keepdim=True)
+                
+        x= torch.cat((box, conf, j.float(), mask), 1)
+        x= x[x[:, 4].argsort(descending=True)]
+        c = x[:, 5:6] * max_wh
+        boxes, scores = x[:, :4] + c, x[:, 4]        
+        i = torchvision.ops.nms(boxes, scores, float(iou_thres)) 
+
+        output[xi] = x[i]
+        if mps:
+            output[xi] = output[xi].to(device)  
+
+    return output
