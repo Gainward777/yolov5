@@ -117,7 +117,7 @@ def try_export(inner_func):
 def export_torchscript(model, im, file, optimize, prefix=colorstr('TorchScript:')):
     # YOLOv5 TorchScript model export
     LOGGER.info(f'\n{prefix} starting export with torch {torch.__version__}...')
-    f = file.with_suffix('.torchscript')
+    f = file.with_suffix('.torchscript.ptl')
 
     ts = torch.jit.trace(model, im, strict=False)
     d = {"shape": im.shape, "stride": int(max(model.stride)), "names": model.names}
@@ -539,6 +539,7 @@ def run(
 
     # Update model
     model.eval()
+    model.is_export=True # set to export sorted class values (command to change in notebook not implemented yet)
     for k, m in model.named_modules():
         if isinstance(m, Detect):
             m.inplace = inplace
