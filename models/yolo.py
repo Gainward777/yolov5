@@ -164,6 +164,13 @@ class BaseModel(nn.Module):
 
 class DetectionModel(BaseModel):
     # YOLOv5 detection model
+    
+    #flag for add postprocessing to export. when True on device u got only  detections
+    is_export=False
+    #defoult treshhold for experimental.py/new_sort (sort detected digits on axis X)
+    #change treshhold in export not implemented yet
+    treshhold=0.8
+    
     def __init__(self, cfg='yolov5s.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
         super().__init__()
         if isinstance(cfg, dict):
@@ -204,9 +211,13 @@ class DetectionModel(BaseModel):
         LOGGER.info('')
 
     def forward(self, x, augment=False, profile=False, visualize=False):
-        if augment:
+        if augment and not self.is_export:
             return self._forward_augment(x)  # augmented inference, None
-        return self._forward_once(x, profile, visualize)  # single-scale inference, train
+        out=self._forward_once(x, profile, visualize)  # single-scale inference, train
+        if self.is_export: # if flag True return detection classies after nms sorted by X
+            return new_sorter(nms_lite(out)[0], self.treshhold)
+        else:
+            return out
 
     def _forward_augment(self, x):
         img_size = x.shape[-2:]  # height, width
