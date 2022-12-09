@@ -114,6 +114,7 @@ def attempt_load(weights, device=None, inplace=True, fuse=True):
     return model
 
 
+#sort ordered recognized objects
 def new_sorter(non_max, theshhold):  
   sort_result=non_max[non_max[:,0].sort()[1]]
   sort_result=sort_result[sort_result[:,4]>theshhold]
@@ -122,6 +123,7 @@ def new_sorter(non_max, theshhold):
   return sort_result
 
 
+#nms from main model with little changes that solve the problem with the occurrence of errors when exporting using torch.jit.trace
 def nms_lite(prediction, conf_thres=0.25, iou_thres=0.45, max_det=300, nm=0):
   #nm - musk's number
     """Non-Maximum Suppression (NMS) on inference results to reject overlapping detections
