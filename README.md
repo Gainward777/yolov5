@@ -1,60 +1,46 @@
-The changes made to this copy of YOLOv5 are intended primarily to get rid of post-processing on the device after export.
+<strong>The changes made to this copy of YOLOv5 are intended primarily to get rid of post-processing on the device after export.
 <br>
-Additionally, a simple sorting of results was added to work with ordered recognized objects, such as numerical sequences.
+Additionally, a simple sorting of results was added to work with ordered recognized objects, such as numerical sequences.</strong>
+<br><br>
+ ## <div align="center">Changelog:</div>
 <br>
-<br>
-<div align="center">Changelog:</div>
-<br>
-<br>
-models/experimental.py
-<br>
- #sort ordered recognized objects
-<br>
-str 117 add: def new_sorter,
-<br>
-str 125 add:
-<br>
-#nms from main model with little changes that solve the problem with the occurrence of errors when exporting using torch.jit.trace
-<br>
-def nms_lite 
-<br>
-<br>
-models/yolo.py
-<br>
-<br>
-str 169 add: 
-<br>
-is_export=False,
-<br>
-str 172 add: 
-<br>
-treshhold=0.8,
-<br>
-str 214 (def forward) change: 
-<br>
-if augment to if augment and not self.is_export,
-<br>
-str 216 change: 
-<br>
-return self._forward_once(x, profile, visualize) to
-<br>
-      out=self._forward_once(x, profile, visualize)
-      <br>
-      if self.is_export:
-      <br>
-          return new_sorter(nms_lite(out)[0], self.treshhold)
-      <br>
-      else:
-      <br>
-          return out
-      <br>
-export.py
-<br>
-<br>
-str 120 change: 
-<br>
-f = file.with_suffix('.torchscript') to f = file.with_suffix('.torchscript.ptl'),
-<br>
-str 542 add: 
-<br>
-model.is_export=True,
+<ul type="disc">
+ <li><b>models/experimental.py</b>
+  <br>   
+  line 118 add:  
+  <pre>#sort ordered recognized objects
+  def new_sorter</pre>   
+  line 126 add:
+  <pre>#nms from main model with little changes that solve the problem with the occurrence of errors when exporting using torch.jit.trace
+  def nms_lite</pre> 
+ </li> 
+ <li><b> models/yolo.py</b>
+  <br>
+  line 169 add:  
+  <pre>#flag for add postprocessing to export. when True on device u got only detections
+  is_export=False</pre>  
+  line 172 add:  
+  <pre>#defoult treshhold for experimental.py/new_sort (sort detected digits on axis X)
+  treshhold=0.8</pre>  
+  line 214 (def forward) change:
+  <pre> if augment to if augment and not self.is_export </pre>
+  line 216 change:
+  <pre>return self._forward_once(x, profile, visualize)</pre>
+  to (our outputs)
+  <pre>
+  out=self._forward_once(x, profile, visualize)    
+  if self.is_export:      
+    return new_sorter(nms_lite(out)[0], self.treshhold)      
+  else:
+    return out</pre>
+ </li>
+ <li><b>export.py</b>
+  <br>
+  line 120 change:
+  <pre>f = file.with_suffix('.torchscript')</pre>
+  to 
+  <pre>f = file.with_suffix('.torchscript.ptl')</pre>
+  line 542 add:
+  <pre>model.is_export=True</pre>
+ </li>
+</ul>
