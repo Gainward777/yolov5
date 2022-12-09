@@ -44,3 +44,14 @@ Additionally, a simple sorting of results was added to work with ordered recogni
   <pre>model.is_export=True</pre>
  </li>
 </ul>
+
+<br>
+By default, the flag is set to false in order to avoid affecting the training process of the model.
+<br> 
+Changes are relevant only for the exported model, therefore the truth is set only when exporting
+<br><br>
+<b>The results can be seen:</b>
+<br>
+<a href="https://github.com/Gainward777/yolov5_custom_training/blob/main/yolov5_custom.ipynb">Jupyter Notebook</a>
+<br>
+<a href="https://github.com/Gainward777/Pricer">Android App</a>
