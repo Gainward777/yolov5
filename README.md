@@ -8,29 +8,53 @@ Additionally, a simple sorting of results was added to work with ordered recogni
 <br>
 models/experimental.py
 <br>
-str 117 add: def new_sorter #sort ordered recognized objects,
+ #sort ordered recognized objects
 <br>
-str 125 add: def nms_lite #nms from main model with little changes that solve the problem with the occurrence of errors when exporting using torch.jit.trace
+str 117 add: def new_sorter,
+<br>
+str 125 add:
+<br>
+#nms from main model with little changes that solve the problem with the occurrence of errors when exporting using torch.jit.trace
+<br>
+def nms_lite 
 <br>
 <br>
 models/yolo.py
 <br>
-str 169 add: is_export=False,
 <br>
-str 172 add: treshhold=0.8,
+str 169 add: 
 <br>
-str 214 (def forward) change: if augment to if augment and not self.is_export,
+is_export=False,
 <br>
-str 216 change: return self._forward_once(x, profile, visualize) to
+str 172 add: 
 <br>
-      out=self._forward_once(x, profile, visualize) 
-      if self.is_export: 
-          #a=nms_lite(out)[0]
+treshhold=0.8,
+<br>
+str 214 (def forward) change: 
+<br>
+if augment to if augment and not self.is_export,
+<br>
+str 216 change: 
+<br>
+return self._forward_once(x, profile, visualize) to
+<br>
+      out=self._forward_once(x, profile, visualize)
+      <br>
+      if self.is_export:
+      <br>
           return new_sorter(nms_lite(out)[0], self.treshhold)
+      <br>
       else:
+      <br>
           return out
+      <br>
 export.py
 <br>
-str 120 change: f = file.with_suffix('.torchscript') to f = file.with_suffix('.torchscript.ptl'),
 <br>
-str 542 add: model.is_export=True,
+str 120 change: 
+<br>
+f = file.with_suffix('.torchscript') to f = file.with_suffix('.torchscript.ptl'),
+<br>
+str 542 add: 
+<br>
+model.is_export=True,
